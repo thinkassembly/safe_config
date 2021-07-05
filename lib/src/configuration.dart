@@ -29,8 +29,8 @@ abstract class Configuration {
   /// [file] must contain valid YAML data.
   Configuration.fromFile(File file) : this.fromString(file.readAsStringSync());
 
-  ConfigurationRuntime get _runtime =>
-      RuntimeContext.current[runtimeType] as ConfigurationRuntime;
+  ConfigurationRuntime? get _runtime =>
+      RuntimeContext.current[runtimeType] as ConfigurationRuntime?;
 
   /// Ingests [value] into the properties of this type.
   ///
@@ -41,7 +41,7 @@ abstract class Configuration {
           this, "input is not an object (is a '${value.runtimeType}')");
     }
 
-    _runtime.decode(this, value as Map);
+    _runtime!.decode(this, value);
 
     validate();
   }
@@ -54,7 +54,7 @@ abstract class Configuration {
   /// for invalid data.
   @mustCallSuper
   void validate() {
-    _runtime.validate(this);
+    _runtime!.validate(this);
   }
 
   static dynamic getEnvironmentOrValue(dynamic value) {
@@ -144,7 +144,7 @@ class ConfigurationException {
   final Configuration configuration;
 
   /// The reason for the exception.
-  final String message;
+  final String? message;
 
   /// The key of the object being evaluated.
   ///
@@ -153,7 +153,7 @@ class ConfigurationException {
 
   @override
   String toString() {
-    if (keyPath?.isEmpty ?? true) {
+    if (keyPath.isEmpty ) {
       return "Failed to read '${configuration.runtimeType}'\n\t-> $message";
     }
 

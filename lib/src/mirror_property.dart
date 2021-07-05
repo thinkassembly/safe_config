@@ -1,22 +1,28 @@
 import 'dart:mirrors';
 
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:safe_config/src/configuration.dart';
 import 'package:safe_config/src/intermediate_exception.dart';
 
 class MirrorTypeCodec {
   MirrorTypeCodec(this.type) {
     if (type.isSubtypeOf(reflectType(Configuration))) {
-      final klass = type as ClassMirror;
-      final classHasDefaultConstructor = klass.declarations.values.any((dm) {
-        return dm is MethodMirror &&
-          dm.isConstructor &&
-          dm.constructorName == const Symbol('') &&
-          dm.parameters.every((p) => p.isOptional == true);
-      });
+      if (type.reflectedType != dynamic) {
+        final klass = type as ClassMirror;
+        final classHasDefaultConstructor = klass.declarations.values.any((dm) {
+          return dm is MethodMirror &&
+              dm.isConstructor &&
+              dm.constructorName == const Symbol('') &&
+              dm.parameters.every((p) => p.isOptional == true);
+        });
 
-      if (!classHasDefaultConstructor) {
-        throw StateError(
-          "Failed to compile '${type.reflectedType}'\n\t-> 'Configuration' subclasses MUST declare an unnammed constructor (i.e. '${type.reflectedType}();') if they are nested.");
+        if (!classHasDefaultConstructor) {
+          throw StateError(
+              "Failed to compile '${type.reflectedType}'\n\t-> 'Configuration' subclasses MUST declare an unnammed constructor (i.e. '${type.reflectedType}();') if they are nested.");
+        }
+      }
+      else {
+        print("wtf");
       }
     }
   }
@@ -44,7 +50,7 @@ class MirrorTypeCodec {
       return value == "true";
     }
 
-    return value as bool;
+    return value as bool?;
   }
 
   dynamic _decodeInt(dynamic value) {
@@ -52,7 +58,7 @@ class MirrorTypeCodec {
       return int.parse(value);
     }
 
-    return value as int;
+    return value as int?;
   }
 
   Configuration _decodeConfig(dynamic object) {
@@ -64,13 +70,13 @@ class MirrorTypeCodec {
     return item;
   }
 
-  List<dynamic> _decodeList(List value) {
-    final out = (type as ClassMirror).newInstance(const Symbol(''), []).reflectee as List;
+  List<dynamic>? _decodeList(List value) {
+    final out = (type as ClassMirror).newInstance(const Symbol(''), []).reflectee as List?;
     final innerDecoder = MirrorTypeCodec(type.typeArguments.first);
     for (var i = 0; i < value.length; i++) {
       try {
         final v = innerDecoder._decodeValue(value[i]);
-        out.add(v);
+        out!.add(v);
       } on IntermediateException catch (e) {
         e.keyPath.add(i);
         rethrow;
@@ -81,9 +87,9 @@ class MirrorTypeCodec {
     return out;
   }
 
-  Map<dynamic, dynamic> _decodeMap(Map value) {
+  Map<dynamic, dynamic>? _decodeMap(Map value) {
     final map = (type as ClassMirror)
-      .newInstance(const Symbol(""), []).reflectee as Map;
+      .newInstance(const Symbol(""), []).reflectee as Map?;
 
     final innerDecoder = MirrorTypeCodec(type.typeArguments.last);
     value.forEach((key, val) {
@@ -92,7 +98,7 @@ class MirrorTypeCodec {
       }
 
       try {
-        map[key] = innerDecoder._decodeValue(val);
+        map![key] = innerDecoder._decodeValue(val);
       } on IntermediateException catch (e) {
         e.keyPath.add(key);
         rethrow;
@@ -218,11 +224,10 @@ class MirrorConfigurationProperty {
 
   static bool _isVariableRequired(VariableMirror m) {
     final attribute = m.metadata
-        .firstWhere(
+        .firstWhereOrNull(
             (im) =>
-                im.type.isSubtypeOf(reflectType(ConfigurationItemAttribute)),
-            orElse: () => null)
-        ?.reflectee as ConfigurationItemAttribute;
+                im.type.isSubtypeOf(reflectType(ConfigurationItemAttribute)))
+        ?.reflectee as ConfigurationItemAttribute?;
 
     return attribute == null ||
         attribute.type == ConfigurationItemAttributeType.required;

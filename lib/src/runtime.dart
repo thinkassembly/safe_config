@@ -13,7 +13,7 @@ class ConfigurationRuntimeImpl extends ConfigurationRuntime
 
   final ClassMirror type;
 
-  Map<String, MirrorConfigurationProperty> properties;
+  late Map<String, MirrorConfigurationProperty> properties;
 
   @override
   void decode(Configuration configuration, Map input) {
@@ -94,7 +94,7 @@ class ConfigurationRuntimeImpl extends ConfigurationRuntime
       declarations.addAll(ptr.declarations.values
           .whereType<VariableMirror>()
           .where((vm) => !vm.isStatic && !vm.isPrivate));
-      ptr = ptr.superclass;
+      ptr = ptr.superclass!;
     }
 
     final m = <String, MirrorConfigurationProperty>{};
@@ -128,7 +128,7 @@ class ConfigurationRuntimeImpl extends ConfigurationRuntime
   @override
   String compile(BuildContext ctx) {
     final directives = ctx.getImportDirectives(
-        uri: type.originalDeclaration.location.sourceUri,
+        uri: type.originalDeclaration.location!.sourceUri,
         alsoImportOriginalFile: true)
       ..add("import 'package:safe_config/src/intermediate_exception.dart';");
 

@@ -14,7 +14,7 @@ void main() {
 }
 
 class ParentConfig extends Configuration {
-  BadConfig badConfig;
+  BadConfig? badConfig;
 }
 
 class BadConfig extends Configuration {
